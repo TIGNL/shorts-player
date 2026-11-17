@@ -8,6 +8,7 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { width:100%; height:100%; background:#000; overflow:hidden; }
 #player { width:100%; height:100%; }
+#overlay { position:fixed; top:0; left:0; width:100%; height:100%; z-index:998; }
 #info {
   position:fixed; bottom:20px; left:0; right:0;
   text-align:center; color:rgba(255,255,255,0.5);
@@ -23,6 +24,7 @@ html, body { width:100%; height:100%; background:#000; overflow:hidden; }
 <body>
 <button id="back" onclick="window.location.href='https://m.youtube.com/feed/playlists'">‹</button>
 <div id="player"></div>
+<div id="overlay"></div>
 <div id="info"></div>
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
@@ -35,9 +37,7 @@ function onYouTubeIframeAPIReady() {
   player = new YT.Player("player", {
     videoId: ids[0],
     playerVars: { autoplay:1, playsinline:1, controls:1, rel:0 },
-    events: {
-      onReady: function(e){ e.target.playVideo(); updateInfo(); }
-    }
+    events: { onReady: function(e){ e.target.playVideo(); updateInfo(); } }
   });
 }
 
@@ -46,26 +46,18 @@ function updateInfo() {
 }
 
 function next() {
-  if (idx < ids.length-1) {
-    idx++;
-    player.loadVideoById(ids[idx]);
-    updateInfo();
-  }
+  if (idx < ids.length-1) { idx++; player.loadVideoById(ids[idx]); updateInfo(); }
 }
-
 function prev() {
-  if (idx > 0) {
-    idx--;
-    player.loadVideoById(ids[idx]);
-    updateInfo();
-  }
+  if (idx > 0) { idx--; player.loadVideoById(ids[idx]); updateInfo(); }
 }
 
-document.addEventListener("touchstart", function(e){
+var overlay = document.getElementById("overlay");
+overlay.addEventListener("touchstart", function(e){
   touchStartY = e.touches[0].clientY;
 }, {passive:true});
 
-document.addEventListener("touchend", function(e){
+overlay.addEventListener("touchend", function(e){
   var dy = touchStartY - e.changedTouches[0].clientY;
   if (Math.abs(dy) < 50) return;
   if (dy > 0) next(); else prev();
