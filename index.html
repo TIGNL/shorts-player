@@ -2,35 +2,95 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Shorts Player</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #000; color: #fff; padding: 20px; font-size: 14px; }
-#log { white-space: pre-wrap; }
+html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touch-action: none; }
+iframe { width: 100%; height: 100%; border: none; display: block; position: absolute; top: 0; left: 0; }
+#container { width: 100%; height: 100%; position: relative; }
+#back {
+  position: fixed;
+  top: env(safe-area-inset-top, 12px);
+  left: 12px;
+  z-index: 999;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 40px; height: 40px;
+  font-size: 22px;
+  cursor: pointer;
+}
+#info {
+  position: fixed;
+  bottom: env(safe-area-inset-bottom, 20px);
+  left: 0; right: 0;
+  text-align: center;
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  z-index: 999;
+  pointer-events: none;
+}
+#msg {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  color: #fff;
+  font-size: 16px;
+  z-index: 1000;
+  text-align: center;
+}
 </style>
 </head>
 <body>
-<div id="log">بدء التشخيص...\n</div>
+<div id="msg">جارٍ التحميل...</div>
+<button id="back" onclick="goBack()">‹</button>
+<div id="container"></div>
+<div id="info"></div>
 <script>
-var CACHE_KEY = "ytmv_cache_v1";
+var ids = [];
+var idx = 0;
+var touchStartY = 0;
 
-function log(msg) {
-  document.getElementById("log").textContent += msg + "\n";
+function showVideo(i) {
+  var id = ids[i];
+  if (!id) return;
+  var c = document.getElementById("container");
+  c.innerHTML = "";
+  var iframe = document.createElement("iframe");
+  iframe.src = "https://www.youtube.com/embed/" + id + "?autoplay=1&playsinline=1";
+  iframe.setAttribute("allowfullscreen","");
+  iframe.setAttribute("allow","autoplay");
+  c.appendChild(iframe);
+  document.getElementById("info").textContent = (i+1) + " / " + ids.length;
+  document.getElementById("msg").style.display = "none";
 }
 
-// خطوة ١: هل الكاش موجود؟
-var cached = null;
-try { cached = JSON.parse(localStorage.getItem(CACHE_KEY)); } catch(e) {}
-log("الكاش: " + (cached ? cached.length + " فيديو" : "غير موجود"));
+function next() { if (idx < ids.length-1) { idx++; showVideo(idx); } }
+function prev() { if (idx > 0) { idx--; showVideo(idx); } }
+function goBack() { window.location.href = "https://m.youtube.com/feed/playlists"; }
 
-// خطوة ٢: هل يمكن الوصول لـ m.youtube.com؟
-log("جارٍ الاتصال بـ m.youtube.com...");
-var x = new XMLHttpRequest();
-x.open("GET", "https://m.youtube.com/feed/playlists", true);
-x.onload = function(){ log("نجح الاتصال - الحالة: " + x.status + " - الحجم: " + x.responseText.length + " حرف"); };
-x.onerror = function(){ log("فشل الاتصال - CORS مانع"); };
-x.send();
+document.addEventListener("touchstart", function(e){
+  touchStartY = e.touches[0].clientY;
+}, {passive:true});
+
+document.addEventListener("touchend", function(e){
+  var dy = touchStartY - e.changedTouches[0].clientY;
+  if (Math.abs(dy) < 50) return;
+  if (dy > 0) next(); else prev();
+}, {passive:true});
+
+var hash = location.hash.replace("#","");
+if (hash.length > 10) {
+  ids = hash.split(",").filter(function(x){ return x.length === 11; });
+}
+
+if (ids.length) {
+  showVideo(0);
+} else {
+  document.getElementById("msg").textContent = "لا توجد فيديوهات — افتح يوتيوب أولاً";
+}
 </script>
 </body>
 </html>
